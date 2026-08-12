@@ -61,8 +61,16 @@ module.exports = async function handler(req, res) {
       avatar: user.avatar,
     });
 
+    // If this is you (ADMIN_DISCORD_ID) logging in generically — not in the
+    // middle of something specific like a purchase — send straight to the
+    // admin panel instead of the regular account page.
+    const isAdminUser =
+      !!process.env.ADMIN_DISCORD_ID && user.id === process.env.ADMIN_DISCORD_ID;
+    const finalDestination =
+      isAdminUser && returnTo === '/account' ? '/admin' : returnTo;
+
     res.statusCode = 302;
-    res.setHeader('Location', returnTo);
+    res.setHeader('Location', finalDestination);
     return res.end();
   } catch (err) {
     console.error(err);
