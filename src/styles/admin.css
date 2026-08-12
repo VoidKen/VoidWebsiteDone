@@ -1,0 +1,74 @@
+.admin-page {
+  min-height: 100vh;
+}
+
+.grant-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 1rem;
+  background: var(--bg-card, #1a1c20);
+  border: 1px solid var(--border, #26292e);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.grant-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text-muted, #9a9ea3);
+  flex: 1;
+  min-width: 200px;
+}
+
+.grant-form input,
+.grant-form select {
+  background: var(--bg-elevated, #16181c);
+  border: 1px solid var(--border, #26292e);
+  color: var(--text, #f3f3f3);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.grant-form input:focus,
+.grant-form select:focus {
+  outline: none;
+  border-color: var(--accent, #5865f2);
+}
+
+.grant-message {
+  font-size: 0.85rem;
+}
+
+.grant-message.success {
+  color: #57f287;
+}
+
+.grant-message.error {
+  color: #ed4245;
+}
+
+.grants-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.grants-table th,
+.grants-table td {
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--border, #26292e);
+}
+
+.grants-table th {
+  color: var(--text-muted, #9a9ea3);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}

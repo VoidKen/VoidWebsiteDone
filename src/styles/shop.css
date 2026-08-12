@@ -1,0 +1,141 @@
+.shop-section {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+  box-sizing: border-box;
+}
+
+.shop-title {
+  color: #f3f3f3;
+  font-size: 1.6rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.shop-banner {
+  padding: 0.85rem 1.1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.shop-banner.success {
+  background: rgba(87, 242, 135, 0.12);
+  border: 1px solid rgba(87, 242, 135, 0.35);
+  color: #57f287;
+}
+
+.shop-banner.canceled {
+  background: rgba(237, 66, 69, 0.1);
+  border: 1px solid rgba(237, 66, 69, 0.3);
+  color: #ed4245;
+}
+
+.shop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.product-card {
+  background: #16181a;
+  border: 1px solid #26292c;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-2px);
+  border-color: #3a3f44;
+}
+
+.product-image {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background-size: cover;
+  background-position: center;
+  background-color: #0d0e0f;
+}
+
+.product-body {
+  padding: 1rem 1.1rem 0.5rem;
+  flex: 1;
+}
+
+.product-name {
+  margin: 0 0 0.4rem;
+  font-size: 1.05rem;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.product-description {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #9a9ea3;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.product-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem;
+  border-top: 1px solid #24272a;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.product-stock {
+  font-size: 0.8rem;
+  color: #8b8f94;
+  white-space: nowrap;
+}
+
+.buy-button {
+  display: inline-block;
+  background: #5865f2;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.55rem 1.1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.buy-button:hover:not(:disabled) {
+  background: #4752c4;
+  text-decoration: none;
+}
+
+.buy-button:disabled {
+  background: #3a3d42;
+  color: #8b8f94;
+  cursor: not-allowed;
+}
+
+.product-status {
+  font-size: 0.85rem;
+  width: 100%;
+}
+
+.product-status.success {
+  color: #57f287;
+}
+
+.product-status.error {
+  color: #ed4245;
+}
