@@ -13,7 +13,7 @@ const links = [
   },
   {
     name: 'Twitch',
-    href: 'https://www.twitch.tv/voidverse2',
+    href: 'https://www.twitch.tv/voidkaneki1',
     icon: 'https://cdn.jsdelivr.net/gh/edent/SuperTinyIcons/images/svg/twitch.svg',
   },
 ];
