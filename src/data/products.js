@@ -56,13 +56,13 @@ const products = [
     file: null,
   },
   {
-    id: 'voidsworld-mod',
-    name: 'Voids World Mod',
-    description: 'Multi-dimension management mod for Forge 1.20.1. Instant download after purchase.',
-    price: 6.99,
-    stock: null,
+    id: 'custom-mc-launcher',
+    name: 'Custom Mc Launcher',
+    description: 'A Fully Customised Minecraft Launcher',
+    price: 20.99,
+    stock: 20,
     image: '/shop-bg.png',
-    file: 'voidsworld-1.20.1.jar',
+    file: null,
   },
 ];
 
