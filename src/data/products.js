@@ -56,8 +56,8 @@ const products = [
     file: null,
   },
   {
-    id: 'custom-mc-launcher',
-    name: 'Custom Mc Launcher',
+    id: 'custom-minecraft-launcher',
+    name: 'Custom Minecraft Launcher',
     description: 'A Fully Customised Minecraft Launcher',
     price: 20.99,
     stock: 20,
