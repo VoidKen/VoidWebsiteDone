@@ -3,65 +3,151 @@
 }
 
 .account-content {
-  max-width: 700px;
+  max-width: 900px;
   margin: 0 auto;
   padding: 2.5rem 1.5rem 4rem;
 }
 
-.account-content h1 {
-  font-family: 'Poppins', sans-serif;
+.account-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
   margin-bottom: 1.5rem;
+}
+
+.account-header h1 {
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+}
+
+.account-count {
+  color: var(--text-muted, #9a9ea3);
+  font-size: 0.85rem;
 }
 
 .account-muted {
   color: var(--text-muted, #9a9ea3);
 }
 
-.account-error {
-  color: #ed4245;
+.empty-icon {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 0.75rem;
 }
 
 .account-empty {
   background: var(--bg-card, #1a1c20);
   border: 1px solid var(--border, #26292e);
   border-radius: 12px;
-  padding: 2rem;
+  padding: 3rem 2rem;
   text-align: center;
 }
 
 .account-empty p {
   color: var(--text-muted, #9a9ea3);
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
-.owned-list {
-  list-style: none;
-  padding: 0;
+.account-error-box {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  background: rgba(237, 66, 69, 0.08);
+  border: 1px solid rgba(237, 66, 69, 0.3);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+}
+
+.account-error-box .empty-icon {
+  margin-bottom: 0;
+  font-size: 1.4rem;
+}
+
+.account-error-title {
+  margin: 0 0 0.25rem;
+  font-weight: 600;
+  color: #ed4245;
+}
+
+.account-error-detail {
   margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  color: var(--text-muted, #9a9ea3);
+  font-size: 0.85rem;
 }
 
-.owned-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+/* Owned products grid */
+.owned-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 1rem;
+}
+
+.owned-card {
   background: var(--bg-card, #1a1c20);
   border: 1px solid var(--border, #26292e);
-  border-radius: 10px;
-  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.owned-card:hover {
+  border-color: #3a3f44;
+  transform: translateY(-2px);
+}
+
+.owned-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
 .owned-name {
-  display: block;
   font-weight: 600;
+  font-size: 0.98rem;
+  line-height: 1.3;
 }
 
-.owned-meta {
-  display: block;
+.source-tag {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.source-tag.stripe {
+  background: rgba(88, 101, 242, 0.15);
+  color: #b8bfff;
+}
+
+.source-tag.admin {
+  background: rgba(87, 242, 135, 0.12);
+  color: #57f287;
+}
+
+.owned-date {
   color: var(--text-muted, #9a9ea3);
-  font-size: 0.8rem;
-  margin-top: 0.2rem;
+  font-size: 0.78rem;
+}
+
+.owned-card-footer {
+  margin-top: 0.4rem;
+}
+
+.owned-card-footer .buy-button {
+  width: 100%;
+}
+
+.no-file-note {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-muted, #9a9ea3);
+  font-style: italic;
 }

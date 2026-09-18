@@ -39,12 +39,20 @@ function AccountPage() {
     <div className="account-page">
       <Navbar />
       <div className="account-content">
-        <h1>My Purchases</h1>
+        <div className="account-header">
+          <h1>My Purchases</h1>
+          {user && !loading && !error && (
+            <span className="account-count">
+              {products.length} item{products.length === 1 ? '' : 's'}
+            </span>
+          )}
+        </div>
 
         {sessionLoading && <p className="account-muted">Loading…</p>}
 
         {!sessionLoading && !user && (
           <div className="account-empty">
+            <div className="empty-icon">🔒</div>
             <p>Log in with Discord to see what you own.</p>
             <a className="cta-button" href={loginUrl('/account')}>
               Log in with Discord
@@ -52,43 +60,66 @@ function AccountPage() {
           </div>
         )}
 
-        {!sessionLoading && user && loading && <p className="account-muted">Loading your products…</p>}
+        {!sessionLoading && user && loading && (
+          <p className="account-muted">Loading your products…</p>
+        )}
 
         {!sessionLoading && user && error && (
-          <p className="account-error">{error}</p>
+          <div className="account-error-box">
+            <span className="empty-icon">⚠️</span>
+            <div>
+              <p className="account-error-title">Couldn't load your purchases</p>
+              <p className="account-error-detail">{error}</p>
+            </div>
+          </div>
         )}
 
         {!sessionLoading && user && !loading && !error && products.length === 0 && (
           <div className="account-empty">
+            <div className="empty-icon">🛒</div>
             <p>You haven't bought anything yet.</p>
+            <a className="cta-button secondary" href="/shop">
+              Visit the shop
+            </a>
           </div>
         )}
 
-        {!sessionLoading && user && products.length > 0 && (
-          <ul className="owned-list">
+        {!sessionLoading && user && !loading && !error && products.length > 0 && (
+          <div className="owned-grid">
             {products.map((p) => (
-              <li key={p.productId} className="owned-item">
-                <div>
+              <div key={p.productId} className="owned-card">
+                <div className="owned-card-top">
                   <span className="owned-name">{p.name}</span>
-                  <span className="owned-meta">
-                    {p.source === 'admin' ? 'Granted by admin' : 'Purchased'} ·{' '}
-                    {new Date(p.grantedAt).toLocaleDateString()}
+                  <span className={`source-tag ${p.source}`}>
+                    {p.source === 'admin' ? 'Granted' : 'Purchased'}
                   </span>
                 </div>
-                {p.hasFile ? (
-                  <button
-                    className="buy-button"
-                    disabled={downloadingId === p.productId}
-                    onClick={() => handleDownload(p.productId)}
-                  >
-                    {downloadingId === p.productId ? 'Starting…' : 'Download'}
-                  </button>
-                ) : (
-                  <span className="owned-meta">No file yet — open a ticket on Discord</span>
-                )}
-              </li>
+                <span className="owned-date">
+                  {new Date(p.grantedAt).toLocaleDateString(undefined, {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </span>
+
+                <div className="owned-card-footer">
+                  {p.hasFile ? (
+                    <button
+                      className="buy-button"
+                      disabled={downloadingId === p.productId}
+                      onClick={() => handleDownload(p.productId)}
+                    >
+                      {downloadingId === p.productId ? 'Starting…' : '⬇ Download'}
+                    </button>
+                  ) : (
+                    <span className="no-file-note">
+                      No file yet — open a ticket on Discord
+                    </span>
+                  )}
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </div>
     </div>
