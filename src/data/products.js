@@ -59,7 +59,7 @@ const products = [
     id: 'custom-mc-launcher',
     name: 'Custom Mc Launcher',
     description: 'Custom Minecraft Launcher .',
-    price: 20.00,
+    price: 50.00,
     stock: 1,
     image: '/shop-bg.png',
     file: null,
