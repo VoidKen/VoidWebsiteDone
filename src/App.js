@@ -9,6 +9,8 @@ import EmailMe from './components/EmailMe';
 import ShopPage from './components/ShopPage';
 import AccountPage from './components/AccountPage';
 import AdminPage from './components/AdminPage';
+import DashboardPage from './components/DashboardPage';
+import GuildDashboard from './components/GuildDashboard';
 
 function Home() {
   const [activeTab, setActiveTab] = useState('about');
@@ -48,6 +50,8 @@ function App() {
           <Route path="/shop" element={<ShopPage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/dashboard/:guildId" element={<GuildDashboard />} />
         </Routes>
       </Router>
     </SessionProvider>

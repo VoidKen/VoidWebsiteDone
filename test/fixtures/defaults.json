@@ -1,0 +1,84 @@
+{
+  "modlogChannelId": null,
+  "antinuke": {
+    "enabled": true,
+    "punishment": "ban",
+    "windowSeconds": 10,
+    "limits": {
+      "channelDelete": 3,
+      "channelCreate": 5,
+      "roleDelete": 3,
+      "roleCreate": 5,
+      "ban": 4,
+      "kick": 4,
+      "webhookCreate": 3,
+      "emojiDelete": 5,
+      "botAdd": 0
+    },
+    "whitelist": [],
+    "restoreChannels": true,
+    "dmOwner": true
+  },
+  "automod": {
+    "enabled": true,
+    "ignoredChannels": [],
+    "ignoredRoles": [],
+    "bannedWords": [],
+    "bannedLinks": [
+      "bit.ly/",
+      "spamlink.com"
+    ],
+    "blockInvites": true,
+    "mentionLimit": 5,
+    "spam": {
+      "enabled": true,
+      "messages": 6,
+      "seconds": 5
+    },
+    "duplicates": {
+      "enabled": true,
+      "count": 4,
+      "seconds": 30
+    },
+    "caps": {
+      "enabled": false,
+      "minLength": 15,
+      "percent": 70
+    },
+    "strikes": {
+      "timeoutAt": 3,
+      "windowMinutes": 10,
+      "timeoutMinutes": 10
+    }
+  },
+  "antialt": {
+    "enabled": true,
+    "thresholdDays": 7,
+    "action": "kick",
+    "logChannelId": null
+  },
+  "store": {
+    "title": "✨ Void Verse Store"
+  },
+  "serverlog": {
+    "channelId": null
+  },
+  "joinRole": {
+    "roleId": null
+  },
+  "tickets": {
+    "supportRoleIds": [],
+    "notifyRoleIds": [],
+    "message": "Hello {user}, your ticket has been created!\n**Reason:** {reason}\nA staff member will be with you shortly.",
+    "categoryName": "Tickets",
+    "channelPrefix": "ticket-",
+    "logChannelId": null
+  },
+  "levels": {
+    "enabled": true,
+    "xpPerMessage": 10,
+    "cooldownSeconds": 60,
+    "announce": true,
+    "announceChannelId": null
+  }
+}

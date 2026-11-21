@@ -1,0 +1,77 @@
+// The whole dashboard API in ONE serverless function (Vercel's free plan allows only 12 functions per project,
+// and the site already uses 11). Pick the action with ?r=guilds | guild | settings | activity.
+const { getSessionFromRequest, isAdmin } = require('./_auth');
+const { readDash, levelFor } = require('./_dashAuth');
+const { ValidationError, SNOWFLAKE } = require('./_guildSettings');
+
+function createHandler({ data, auth = { getSessionFromRequest, isAdmin, readDash, levelFor } }) {
+  const fail = (res, status, error, extra = {}) => res.status(status).json({ error, ...extra });
+
+  /** Browsers always send Origin on a cross-site POST, so requiring it to match our own host blocks CSRF. */
+  function sameOrigin(req) {
+    const origin = req.headers.origin;
+    if (!origin) return false;
+    try { return new URL(origin).host === (req.headers['x-forwarded-host'] || req.headers.host); } catch { return false; }
+  }
+
+  return async function handler(req, res) {
+    res.setHeader('Cache-Control', 'no-store');
+    const route = String((req.query && req.query.r) || '');
+    try {
+      const session = auth.getSessionFromRequest(req);
+      if (!session) return fail(res, 401, 'Log in with Discord first.', { login: true });
+      const siteAdmin = auth.isAdmin(session);
+      const levels = auth.readDash(req, session);
+      if (!levels && !siteAdmin) return fail(res, 401, 'Your server permissions need refreshing.', { reauth: true });
+
+      if (route === 'guilds' && req.method === 'GET') {
+        return res.status(200).json({ guilds: await data.listGuilds({ levels, siteAdmin }) });
+      }
+
+      const guildId = String((req.query && req.query.g) || '');
+      if (!SNOWFLAKE.test(guildId)) return fail(res, 400, 'Missing or invalid server.');
+      const userLevel = auth.levelFor({ session, levels, guildId, isSiteAdmin: siteAdmin });
+      if (!userLevel) return fail(res, 403, "You can't manage that server.");
+
+      if (route === 'guild' && req.method === 'GET') {
+        const bundle = await data.getGuildBundle(guildId, userLevel);
+        if (bundle.error === 'not_found') return fail(res, 404, "VoidBot isn't in that server.");
+        if (bundle.error === 'no_defaults') return fail(res, 503, "The bot hasn't published its settings yet. Start the bot once, then reload.");
+        return res.status(200).json(bundle);
+      }
+
+      if (route === 'activity' && req.method === 'GET') {
+        const result = await data.activity(guildId, String(req.query.type || ''), { before: req.query.before, kind: req.query.kind });
+        if (!result) return fail(res, 400, 'Unknown activity type.');
+        return res.status(200).json(result);
+      }
+
+      if (route === 'settings' && req.method === 'POST') {
+        if (!sameOrigin(req)) return fail(res, 403, 'Bad origin.');
+        if (!String(req.headers['content-type'] || '').includes('application/json')) return fail(res, 415, 'Send JSON.');
+        const { section, values } = req.body || {};
+        if (typeof section !== 'string') return fail(res, 400, 'Missing section.');
+        const result = await data.saveSection({ guildId, section, input: values, actorId: session.id, userLevel });
+        if (result.error === 'forbidden') return fail(res, 403, section === 'antinuke' || section === 'antialt' || section === 'logging' ? 'That section needs the Administrator permission.' : "You can't edit that section.");
+        if (result.error === 'not_found') return fail(res, 404, "VoidBot isn't in that server.");
+        if (result.error === 'no_defaults') return fail(res, 503, "The bot hasn't published its settings yet.");
+        return res.status(200).json({ ok: true, value: result.value, changed: result.changed });
+      }
+
+      return fail(res, route ? 405 : 400, 'Unknown request.');
+    } catch (err) {
+      if (err instanceof ValidationError) return fail(res, 400, err.userMessage);
+      console.error('[dashboard]', err);
+      return fail(res, 500, 'Server error.');
+    }
+  };
+}
+
+module.exports = (req, res) => {
+  // Loaded lazily so tests can import createHandler without needing database environment variables.
+  const { sql } = require('./_db');
+  const { createData } = require('./_dashboardData');
+  module.exports._real = module.exports._real || createHandler({ data: createData(sql) });
+  return module.exports._real(req, res);
+};
+module.exports.createHandler = createHandler;

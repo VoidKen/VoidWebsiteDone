@@ -1,24 +1,31 @@
 const { setSessionCookie } = require('../_auth');
+const { manageLevels, setDashCookie } = require('../_dashAuth');
 
-function readReturnTo(req) {
+function readState(req) {
+  const fallback = { returnTo: '/account', dash: false, silent: false };
   try {
     const state = req.query && req.query.state;
-    if (!state) return '/account';
+    if (!state) return fallback;
     const decoded = JSON.parse(Buffer.from(state, 'base64url').toString('utf8'));
     // Only ever redirect to a same-site path — never let this become an
-    // open redirect to an attacker-controlled URL.
-    if (typeof decoded.returnTo === 'string' && decoded.returnTo.startsWith('/')) {
-      return decoded.returnTo;
-    }
+    // open redirect to an attacker-controlled URL. ("//evil.com" is also rejected.)
+    const safe = typeof decoded.returnTo === 'string' && decoded.returnTo.startsWith('/') && !decoded.returnTo.startsWith('//');
+    return { returnTo: safe ? decoded.returnTo : '/account', dash: decoded.dash === true, silent: decoded.silent === true };
   } catch (err) {
-    // fall through to default
+    return fallback;
   }
-  return '/account';
 }
 
 module.exports = async function handler(req, res) {
   const { code } = req.query || {};
-  const returnTo = readReturnTo(req);
+  const { returnTo, dash, silent } = readState(req);
+
+  // A silent re-check fails if the user hasn't approved the `guilds` scope before — fall back to the normal login screen once.
+  if (!code && silent) {
+    res.statusCode = 302;
+    res.setHeader('Location', `/api/auth/login?dash=1&returnTo=${encodeURIComponent(returnTo)}`);
+    return res.end();
+  }
 
   if (!code) {
     res.statusCode = 302;
@@ -60,6 +67,24 @@ module.exports = async function handler(req, res) {
       username: user.username,
       avatar: user.avatar,
     });
+
+    // Dashboard login: work out which servers this person manages AND the bot is in, and remember that for an hour.
+    if (dash) {
+      let levels = {};
+      try {
+        const guildsRes = await fetch('https://discord.com/api/users/@me/guilds', {
+          headers: { Authorization: `Bearer ${tokenData.access_token}` },
+        });
+        if (guildsRes.ok) {
+          const { sql } = require('../_db');
+          const { createData } = require('../_dashboardData');
+          levels = await createData(sql).intersectBotGuilds(manageLevels(await guildsRes.json()));
+        }
+      } catch (err) {
+        console.error('[dashboard login] could not read servers:', err.message);
+      }
+      setDashCookie(res, user.id, levels);
+    }
 
     // If this is you (ADMIN_DISCORD_ID) logging in generically — not in the
     // middle of something specific like a purchase — send straight to the

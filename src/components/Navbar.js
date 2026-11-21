@@ -89,6 +89,9 @@ function Navbar({ activeTab, onTabChange }) {
                 <button onClick={() => { setMenuOpen(false); navigate('/account'); }}>
                   My Purchases
                 </button>
+                <button onClick={() => { setMenuOpen(false); navigate('/dashboard'); }}>
+                  Bot Dashboard
+                </button>
                 {user.isAdmin && (
                   <button onClick={() => { setMenuOpen(false); navigate('/admin'); }}>
                     Admin
