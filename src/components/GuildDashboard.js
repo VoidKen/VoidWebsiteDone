@@ -3,6 +3,8 @@ import { Link, useParams } from 'react-router-dom';
 import Navbar from './Navbar';
 import SectionEditor from '../dashboard/SectionEditor';
 import ActivityTab from '../dashboard/ActivityTab';
+import WheelsTab from '../dashboard/WheelsTab';
+import CommandsTab from '../dashboard/CommandsTab';
 import { SECTION_META } from '../dashboard/sections';
 import { api, dashLoginUrl } from '../dashboard/api';
 import { guildIcon } from './DashboardPage';
@@ -56,15 +58,23 @@ function GuildDashboard() {
                     {!bundle.sections[m.key].editable && <span className="dash-nav-lock" title="Read-only for you">🔒</span>}
                   </button>
                 ))}
+                <button type="button" className={`dash-nav-item${tab === 'wheels' ? ' active' : ''}`} onClick={() => setTab('wheels')}>
+                  <span aria-hidden="true">🎡</span> Wheels
+                </button>
+                <button type="button" className={`dash-nav-item${tab === 'commands' ? ' active' : ''}`} onClick={() => setTab('commands')}>
+                  <span aria-hidden="true">💬</span> Custom commands
+                  {bundle.level !== 'admin' && <span className="dash-nav-lock" title="Read-only for you">🔒</span>}
+                </button>
                 <button type="button" className={`dash-nav-item${tab === 'activity' ? ' active' : ''}`} onClick={() => setTab('activity')}>
                   <span aria-hidden="true">📋</span> Activity
                 </button>
               </nav>
 
               <div className="dash-main">
-                {tab === 'activity'
-                  ? <ActivityTab guildId={guildId} />
-                  : <SectionEditor key={`${guildId}-${tab}`} guildId={guildId} name={tab} section={bundle.sections[tab]} guild={guild} />}
+                {tab === 'activity' && <ActivityTab guildId={guildId} />}
+                {tab === 'wheels' && <WheelsTab key={guildId} guildId={guildId} guild={guild} />}
+                {tab === 'commands' && <CommandsTab key={guildId} guildId={guildId} />}
+                {!['activity', 'wheels', 'commands'].includes(tab) && <SectionEditor key={`${guildId}-${tab}`} guildId={guildId} name={tab} section={bundle.sections[tab]} guild={guild} />}
               </div>
             </div>
           </>

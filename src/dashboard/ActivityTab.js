@@ -13,6 +13,7 @@ const Id = ({ id }) => (id ? <code className="dash-id" title="Discord ID">{id}</
 function describe(item) {
   const d = item.details || {};
   if (item.kind === 'dashboard_settings') return `Changed ${d.section} settings on the website${d.changed?.length ? ` (${d.changed.join(', ')})` : ''}`;
+  if (item.kind === 'dashboard_wheel' || item.kind === 'dashboard_command') return item.reason || '';
   return item.reason || '';
 }
 

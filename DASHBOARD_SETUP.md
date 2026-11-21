@@ -1,7 +1,7 @@
 # Bot Dashboard Setup
 
 Adds `/dashboard` to the site: log in with Discord, pick a server you manage, and edit VoidBot's settings
-(anti-nuke, automod, anti-alt, levels, tickets, logging and join role) plus a read-only activity log.
+(anti-nuke, automod, anti-alt, levels, tickets, logging and join role), saved wheels, and custom commands, plus a read-only activity log.
 
 ## How it works
 
@@ -18,20 +18,24 @@ Adds `/dashboard` to the site: log in with Discord, pick a server you manage, an
 |---|---|
 | Anti-nuke, Anti-alt, Logging & roles | Administrator (or server owner) |
 | Automod, Levels, Tickets | Manage Server |
+| Wheels: view, create, edit, delete | Manage Server |
+| Custom commands: view | Manage Server |
+| Custom commands: add, edit, delete | Administrator (same as the bot's `/addcustom`) |
 
 People with Manage Server see the admin sections read-only. The site owner (`ADMIN_DISCORD_ID`) can open any server the bot is in.
 This mirrors the bot's own slash-command permissions, so the dashboard can't be used to get around them.
 
 ## Files added or changed
 
-- `api/dashboard.js`: the whole dashboard API in ONE function (`?r=guilds | guild | settings | activity`).
+- `api/dashboard.js`: the whole dashboard API in ONE function (`?r=guilds | guild | settings | activity | wheels | wheel | commands | command`).
   Vercel's free plan allows 12 functions per project and the site is now exactly at 12, so any new API route must be folded into an existing one.
+- `api/_communityData.js`: wheels and custom commands (same tables and limits as the bot: 25 wheels, 200 names each, 100 commands, 1800-character replies).
 - `api/_guildSettings.js`: which settings can be edited and the server-side checks on every value.
 - `api/_dashboardData.js`: database queries. `api/_dashAuth.js`: the "which servers can this person manage" cookie.
 - `api/auth/login.js` and `api/auth/callback.js`: dashboard logins also ask Discord for the server list (`guilds` scope).
   Normal shop logins are unchanged and still only ask for `identify`.
 - `src/components/DashboardPage.js`, `GuildDashboard.js`, `src/dashboard/*`, `src/styles/dashboard.css`, routes in `src/App.js`, a "Bot Dashboard" item in the navbar menu.
-- `test/` and `npm run test:api`: 14 tests against a real in-memory Postgres (`@electric-sql/pglite`, dev dependency only).
+- `test/` and `npm run test:api`: 17 tests against a real in-memory Postgres (`@electric-sql/pglite`, dev dependency only).
 
 ## Setup
 

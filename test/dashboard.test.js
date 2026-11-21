@@ -296,3 +296,98 @@ test('handler never leaks internals on unexpected errors', async () => {
   assert.match(owner.body.error, /connection refused/, 'only the site owner sees the cause');
   assert.ok(getSessionFromRequest && isAdmin);
 });
+
+// ───────────── wheels and custom commands ─────────────
+const { createCommunity } = require('../api/_communityData');
+
+test('wheels: save names/role/all, replace, list, delete, validate, and enforce the 25 limit', async () => {
+  const { pg, sql } = await freshDb();
+  const c = createCommunity(sql);
+  const save = (input) => c.saveWheel({ guildId: G, input, actorId: U_MANAGE });
+
+  await save({ name: ' Lunch Spots ', type: 'names', names: ['Pizza', ' pizza ', 'Tacos', ''] });
+  await save({ name: '', type: 'all' });
+  await save({ name: 'mods', type: 'role', roleId: R1 });
+  let list = await c.listWheels(G);
+  assert.deepEqual(list.map((w) => w.name), ['default', 'lunch spots', 'mods']);
+  assert.deepEqual(list.find((w) => w.name === 'lunch spots').names, ['Pizza', 'Tacos']);
+  assert.deepEqual(list.find((w) => w.name === 'mods'), { name: 'mods', type: 'role', roleId: R1, roleName: 'Mod' });
+  const raw = (await pg.query("SELECT data FROM wheel_saved WHERE name='mods'")).rows[0].data;
+  assert.deepEqual(raw, { role_id: R1, role_name: 'Mod' }, 'stored in exactly the shape the bot reads');
+
+  await save({ name: 'lunch spots', type: 'names', names: ['Sushi'] }); // replace
+  assert.deepEqual((await c.listWheels(G)).find((w) => w.name === 'lunch spots').names, ['Sushi']);
+
+  await assert.rejects(() => save({ name: 'x', type: 'role', roleId: '300000000000000099' }), /not a role in this server/);
+  await assert.rejects(() => save({ name: 'x', type: 'names', names: [] }), /at least one name/);
+  await assert.rejects(() => save({ name: 'x', type: 'names', names: ['a'.repeat(101)] }), /at most 100/);
+  await assert.rejects(() => save({ name: 'x', type: 'names', names: Array.from({ length: 201 }, (_, i) => `n${i}`) }), /at most 200/);
+  await assert.rejects(() => save({ name: 'x'.repeat(51), type: 'all' }), /at most 50/);
+  await assert.rejects(() => save({ name: 'bad\nname', type: 'all' }), /not allowed/);
+  await assert.rejects(() => save({ name: 'x', type: 'weird' }), /names, role or all/);
+  await assert.rejects(() => save({ name: 5, type: 'all' }), /must be text/);
+
+  assert.equal((await c.deleteWheel({ guildId: G, rawName: 'MODS', actorId: U_MANAGE })).name, 'mods');
+  assert.equal((await c.deleteWheel({ guildId: G, rawName: 'mods', actorId: U_MANAGE })).error, 'missing');
+
+  for (let i = 0; i < 22; i += 1) assert.ok(!(await save({ name: `w${i}`, type: 'all' })).error); // 2 existing + 22 = 24... plus default/lunch = total 24
+  assert.ok(!(await save({ name: 'w22', type: 'all' })).error);
+  assert.equal((await save({ name: 'w23', type: 'all' })).error, 'limit');
+  assert.ok(!(await save({ name: 'w22', type: 'names', names: ['edit still works at the limit'] })).error);
+  assert.equal((await pg.query("SELECT COUNT(*)::int n FROM mod_events WHERE kind='dashboard_wheel'")).rows[0].n > 5, true);
+
+  await pg.query("INSERT INTO wheel_saved (guild_id, name, type, data) VALUES ($1,'theirs','all','{}')", [G2]);
+  assert.equal((await c.listWheels(G2)).length, 1, 'servers are separate');
+});
+
+test('custom commands: save/list/replace/delete, name rules, response rules, 100 limit', async () => {
+  const { pg, sql } = await freshDb();
+  const c = createCommunity(sql);
+  const save = (rawName, response) => c.saveCommand({ guildId: G, rawName, response, actorId: U_ADMIN });
+  assert.equal((await save('!Hello', '  Hi there  ')).name, 'hello');
+  await save('/rules', 'Be nice');
+  assert.deepEqual((await c.listCommands(G)).map((x) => [x.name, x.response, x.createdBy]), [['hello', 'Hi there', U_ADMIN], ['rules', 'Be nice', U_ADMIN]]);
+  await save('hello', 'Hello again');
+  assert.equal((await c.listCommands(G))[0].response, 'Hello again');
+  for (const bad of ['', 'two words', 'a'.repeat(33), 'emoji😀', '../x', '!']) await assert.rejects(() => save(bad, 'x'), /letters, numbers/, bad);
+  await assert.rejects(() => save('ok', ''), /cannot be empty/);
+  await assert.rejects(() => save('ok', '   '), /cannot be empty/);
+  await assert.rejects(() => save('ok', 'x'.repeat(1801)), /at most 1800/);
+  await assert.rejects(() => save('ok', 5), /must be text/);
+  assert.ok(!(await save('max', 'x'.repeat(1800))).error);
+  assert.equal((await c.deleteCommand({ guildId: G, rawName: '!HELLO', actorId: U_ADMIN })).name, 'hello');
+  assert.equal((await c.deleteCommand({ guildId: G, rawName: 'hello', actorId: U_ADMIN })).error, 'missing');
+  await pg.query("INSERT INTO custom_commands (guild_id, name, response) SELECT $1, 'c' || g, 'x' FROM generate_series(1, 98) g", [G]); // rules, max + 98 = 100
+  assert.equal((await save('onetoomany', 'x')).error, 'limit');
+  assert.ok(!(await save('c5', 'editing at the limit is fine')).error);
+  assert.equal((await pg.query("SELECT COUNT(*)::int n FROM mod_events WHERE kind='dashboard_command'")).rows[0].n > 3, true);
+  assert.equal((await createCommunity((await freshDb({ schema: false })).sql).listWheels(G)).length, 0, 'missing tables read as empty');
+});
+
+test('handler: wheel and command routes enforce levels, origin and validation', async () => {
+  const { pg, sql } = await freshDb();
+  const h = createHandler({ data: createData(sql), community: createCommunity(sql) });
+  const admin = [sessionCookie(U_ADMIN), dashCookie(U_ADMIN, { [G]: 'admin' })];
+  const manage = [sessionCookie(U_MANAGE), dashCookie(U_MANAGE, { [G]: 'manage' })];
+
+  const w = await post(h, { r: 'wheel', g: G }, manage, { action: 'save', name: 'Games', type: 'names', names: ['Chess', 'Go'] });
+  assert.equal(w.code, 200);
+  assert.deepEqual((await call(h, { query: { r: 'wheels', g: G }, cookies: manage })).body, { wheels: [{ name: 'games', type: 'names', names: ['Chess', 'Go'] }], editable: true });
+  assert.equal((await post(h, { r: 'wheel', g: G }, manage, { action: 'save', name: 'x', type: 'names', names: [] })).code, 400);
+  assert.equal((await post(h, { r: 'wheel', g: G }, manage, { action: 'nope' })).code, 400);
+  assert.equal((await post(h, { r: 'wheel', g: G }, manage, { action: 'delete', name: 'ghost' })).code, 404);
+  assert.equal((await post(h, { r: 'wheel', g: G }, manage, { action: 'save', name: 'x', type: 'all' }, { origin: 'https://evil.test' })).code, 403);
+  assert.equal((await post(h, { r: 'wheel', g: G }, manage, { action: 'delete', name: 'games' })).code, 200);
+  assert.equal((await post(h, { r: 'wheel', g: G2 }, manage, { action: 'save', name: 'x', type: 'all' })).code, 403, 'not their server');
+
+  const cm = await call(h, { query: { r: 'commands', g: G }, cookies: manage });
+  assert.equal(cm.body.editable, false);
+  const denied = await post(h, { r: 'command', g: G }, manage, { action: 'save', name: 'hi', response: 'yo' });
+  assert.equal(denied.code, 403); assert.match(denied.body.error, /Administrator/);
+  assert.equal((await pg.query('SELECT 1 FROM custom_commands')).rows.length, 0);
+  assert.equal((await post(h, { r: 'command', g: G }, admin, { action: 'save', name: '!hi', response: 'yo' })).code, 200);
+  assert.equal((await call(h, { query: { r: 'commands', g: G }, cookies: admin })).body.commands[0].name, 'hi');
+  assert.equal((await post(h, { r: 'command', g: G }, admin, { action: 'save', name: 'bad name', response: 'yo' })).code, 400);
+  assert.equal((await post(h, { r: 'command', g: G }, admin, { action: 'delete', name: 'hi' })).code, 200);
+  assert.equal((await call(h, { method: 'POST', query: { r: 'command', g: G }, cookies: admin, body: { action: 'save', name: 'a', response: 'b' }, headers: { 'content-type': 'application/json' } })).code, 403, 'no Origin');
+});

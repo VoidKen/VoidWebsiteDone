@@ -2,9 +2,9 @@
 // and the site already uses 11). Pick the action with ?r=guilds | guild | settings | activity.
 const { getSessionFromRequest, isAdmin } = require('./_auth');
 const { readDash, levelFor } = require('./_dashAuth');
-const { ValidationError, SNOWFLAKE } = require('./_guildSettings');
+const { ValidationError, SNOWFLAKE, atLeast } = require('./_guildSettings');
 
-function createHandler({ data, auth = { getSessionFromRequest, isAdmin, readDash, levelFor } }) {
+function createHandler({ data, community, auth = { getSessionFromRequest, isAdmin, readDash, levelFor } }) {
   const fail = (res, status, error, extra = {}) => res.status(status).json({ error, ...extra });
 
   /** Browsers always send Origin on a cross-site POST, so requiring it to match our own host blocks CSRF. */
@@ -12,6 +12,13 @@ function createHandler({ data, auth = { getSessionFromRequest, isAdmin, readDash
     const origin = req.headers.origin;
     if (!origin) return false;
     try { return new URL(origin).host === (req.headers['x-forwarded-host'] || req.headers.host); } catch { return false; }
+  }
+
+  /** Checks every write must pass: same-site Origin (CSRF) and a JSON body. Returns [status, message] or null. */
+  function postProblem(req) {
+    if (!sameOrigin(req)) return [403, 'Bad origin.'];
+    if (!String(req.headers['content-type'] || '').includes('application/json')) return [415, 'Send JSON.'];
+    return null;
   }
 
   return async function handler(req, res) {
@@ -48,9 +55,28 @@ function createHandler({ data, auth = { getSessionFromRequest, isAdmin, readDash
         return res.status(200).json(result);
       }
 
+      // Wheels (Manage Server, like the bot's Manage Messages gate but stricter) and custom commands (view: Manage Server, edit: Administrator, like the bot).
+      if (['wheels', 'commands'].includes(route) && req.method === 'GET') {
+        return route === 'wheels'
+          ? res.status(200).json({ wheels: await community.listWheels(guildId), editable: atLeast(userLevel, 'manage') })
+          : res.status(200).json({ commands: await community.listCommands(guildId), editable: atLeast(userLevel, 'admin') });
+      }
+      if (['wheel', 'command'].includes(route) && req.method === 'POST') {
+        const bad = postProblem(req); if (bad) return fail(res, bad[0], bad[1]);
+        const { action, ...input } = req.body || {};
+        if (action !== 'save' && action !== 'delete') return fail(res, 400, 'Unknown action.');
+        const needed = route === 'wheel' ? 'manage' : 'admin';
+        if (!atLeast(userLevel, needed)) return fail(res, 403, needed === 'admin' ? 'Editing custom commands needs the Administrator permission.' : "You can't edit wheels here.");
+        const actorId = session.id;
+        const result = route === 'wheel'
+          ? (action === 'save' ? await community.saveWheel({ guildId, input, actorId }) : await community.deleteWheel({ guildId, rawName: input.name, actorId }))
+          : (action === 'save' ? await community.saveCommand({ guildId, rawName: input.name, response: input.response, actorId }) : await community.deleteCommand({ guildId, rawName: input.name, actorId }));
+        if (result.error) return fail(res, result.error === 'missing' ? 404 : 409, result.message);
+        return res.status(200).json({ ok: true, name: result.name });
+      }
+
       if (route === 'settings' && req.method === 'POST') {
-        if (!sameOrigin(req)) return fail(res, 403, 'Bad origin.');
-        if (!String(req.headers['content-type'] || '').includes('application/json')) return fail(res, 415, 'Send JSON.');
+        const bad = postProblem(req); if (bad) return fail(res, bad[0], bad[1]);
         const { section, values } = req.body || {};
         if (typeof section !== 'string') return fail(res, 400, 'Missing section.');
         const result = await data.saveSection({ guildId, section, input: values, actorId: session.id, userLevel });
@@ -73,7 +99,8 @@ module.exports = (req, res) => {
   // Loaded lazily so tests can import createHandler without needing database environment variables.
   const { sql } = require('./_db');
   const { createData } = require('./_dashboardData');
-  module.exports._real = module.exports._real || createHandler({ data: createData(sql) });
+  const { createCommunity } = require('./_communityData');
+  module.exports._real = module.exports._real || createHandler({ data: createData(sql), community: createCommunity(sql) });
   return module.exports._real(req, res);
 };
 module.exports.createHandler = createHandler;

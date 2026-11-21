@@ -85,6 +85,7 @@ const SECTIONS = {
 };
 
 const LEVEL_RANK = { manage: 1, admin: 2 };
+const atLeast = (userLevel, needed) => (LEVEL_RANK[userLevel] ?? 0) >= LEVEL_RANK[needed];
 const canEditSection = (name, userLevel) => Boolean(SECTIONS[name]) && (LEVEL_RANK[userLevel] ?? 0) >= LEVEL_RANK[SECTIONS[name].level];
 
 function check(node, value, path, ctx) {
@@ -184,4 +185,4 @@ function collectIds(stored) {
   return out;
 }
 
-module.exports = { SECTIONS, ValidationError, validateSection, sectionValue, collectIds, canEditSection, merge, SNOWFLAKE };
+module.exports = { atLeast, SECTIONS, ValidationError, validateSection, sectionValue, collectIds, canEditSection, merge, SNOWFLAKE };
