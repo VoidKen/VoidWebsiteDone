@@ -17,10 +17,12 @@ function createHandler({ data, auth = { getSessionFromRequest, isAdmin, readDash
   return async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-store');
     const route = String((req.query && req.query.r) || '');
+    let ownerView = false; // the site owner also gets the real error text on a 500 (nobody else ever does)
     try {
       const session = auth.getSessionFromRequest(req);
       if (!session) return fail(res, 401, 'Log in with Discord first.', { login: true });
       const siteAdmin = auth.isAdmin(session);
+      ownerView = siteAdmin;
       const levels = auth.readDash(req, session);
       if (!levels && !siteAdmin) return fail(res, 401, 'Your server permissions need refreshing.', { reauth: true });
 
@@ -62,7 +64,7 @@ function createHandler({ data, auth = { getSessionFromRequest, isAdmin, readDash
     } catch (err) {
       if (err instanceof ValidationError) return fail(res, 400, err.userMessage);
       console.error('[dashboard]', err);
-      return fail(res, 500, 'Server error.');
+      return fail(res, 500, ownerView ? `Server error: ${String(err && (err.code ? `${err.code} ` : '') + (err && err.message)).slice(0, 300)}` : 'Server error.');
     }
   };
 }

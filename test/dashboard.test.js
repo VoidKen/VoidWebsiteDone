@@ -292,5 +292,7 @@ test('handler never leaks internals on unexpected errors', async () => {
   const r = await call(h, { query: { r: 'guilds' }, cookies: [sessionCookie(U_ADMIN), dashCookie(U_ADMIN, {})] });
   assert.equal(r.code, 500); assert.equal(r.body.error, 'Server error.');
   assert.ok(!JSON.stringify(r.body).includes('hunter2'));
+  const owner = await call(h, { query: { r: 'guilds' }, cookies: [sessionCookie(process.env.ADMIN_DISCORD_ID)] });
+  assert.match(owner.body.error, /connection refused/, 'only the site owner sees the cause');
   assert.ok(getSessionFromRequest && isAdmin);
 });
